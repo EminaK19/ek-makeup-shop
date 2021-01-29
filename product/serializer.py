@@ -19,8 +19,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.CharField(read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
     product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)
-    # read_only - отображается только при get запросе
-    # write_only - отображается только при post запросе
 
     class Meta:
         model = Review
@@ -30,11 +28,13 @@ class ReviewSerializer(serializers.ModelSerializer):
 class RatingSerializer(serializers.ModelSerializer):
     author = serializers.CharField(read_only=True)
     created_at = serializers.DateTimeField(read_only=True)
-    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)
+    item = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
 
     class Meta:
         model = Rating
         fields = '__all__'
+
+# сделать ограничение на количество оценок на 1 продукт
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -53,15 +53,26 @@ class ProductSerializer(serializers.ModelSerializer):
             return url
         return ''
 
+    def _get_color_image_url(self, obj):
+        """method for get product color image url"""
+        request = self.context.get('request')
+        image_obj = obj.products_color_image.first()
+        if image_obj is not None and image_obj.color_image:
+            url = image_obj.color_image.url
+            if request is not None:
+                url = request.build_absolute_uri(url)
+            return url
+        return ''
+
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         representation['image'] = self._get_image_url(instance)
-        # representation['products_color_image'] = self.???(instance)
+        representation['products_color_image'] = self._get_color_image_url(instance)
         representation['categories'] = CategorySerializer(instance.categories.all(), many=True).data
+        representation['companies'] = CompanySerializer(instance.companies.all(), many=True).data
         representation['reviews'] = ReviewSerializer(instance.reviews.all(), many=True).data
-        # representation['rating'] = RatingSerializer(instance.rating.all(), many=True).data
+        representation['rating'] = instance.get_avg_rating()
         return representation
-# можно сделать отдельно на лситинг отдельно на детали сериалайзеры чтобы добавить комментарии к деталям а не к листингу
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -83,10 +94,13 @@ class ProductListSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         representation['image'] = self._get_image_url(instance)
         representation['categories'] = CategorySerializer(instance.categories.all(), many=True).data
+        representation['companies'] = CompanySerializer(instance.companies.all(), many=True).data
+        representation['reviews'] = ReviewSerializer(instance.reviews.all(), many=True).data
+        representation['rating'] = instance.get_avg_rating()
         return representation
 
 
 class CreateUpdateProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ['title', 'description', 'price', 'categories', 'prodused_by']
+        fields = ['uuid', 'title', 'description', 'price', 'categories', 'companies']

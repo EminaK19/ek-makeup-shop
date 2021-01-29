@@ -14,8 +14,3 @@ def send_activation_email(user):
               from_email=from_email,
               recipient_list=recipients,
               fail_silently=False)
-
-
-class IsOwnerAccount(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
-        return obj.username == request.user.username or bool(request.user and request.user.is_superuser)

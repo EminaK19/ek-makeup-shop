@@ -11,6 +11,8 @@ urlpatterns = [
     path('categories/', CategoriesList.as_view()),
     path('brands/', CompanyList.as_view()),
     path('', include(router.urls)),
-    path('review/create/', ReviewCreate.as_view()),
-    path('rating/select/', RatingSelect.as_view()),
+    path('review/<str:pk>/', ReviewCreate.as_view()),
+    path('rating/', RatingSelect.as_view()),
+
 ]
+

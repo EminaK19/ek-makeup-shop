@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Avg
 from django_countries.fields import CountryField
 from django.db import models
 import uuid
@@ -57,7 +58,7 @@ class Product(models.Model):
     description = models.TextField()
     price = models.DecimalField(max_digits=12, decimal_places=2)
     categories = models.ManyToManyField(Category, related_name='product_category')
-    prodused_by = models.ManyToManyField(ProdusedBy, related_name='product_company')
+    companies = models.ManyToManyField(ProdusedBy, related_name='product_company')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -69,8 +70,12 @@ class Product(models.Model):
             super().save(*args, **kwargs)
 
     class Meta:
-        ordering = ('created_at',)
-        # ordering = ('-created_at')
+        ordering = ('-created_at',)
+
+    def get_avg_rating(self):
+        rating_items = self.rating.all()
+        values = rating_items.aggregate(avg=Avg('rating'))
+        return values['avg']
 
 
 class ProductImage(models.Model):
@@ -97,16 +102,17 @@ class Review(models.Model):
 
 class Rating (models.Model):
     item = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='rating')
-    RATING = (
+    RATING_CHOICES = (
         (1, 1),
         (2, 2),
         (3, 3),
         (4, 4),
         (5, 5),
     )
-    rating = models.IntegerField(choices=RATING, blank=True, null=True)
+    rating = models.PositiveSmallIntegerField(choices=RATING_CHOICES, blank=True, null=True)
     author = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name='rating')
 
     def __str__(self):
         return f'Rating of product {self.item} by {self.author} is {self.rating} star(s)'
+
 

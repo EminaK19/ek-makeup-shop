@@ -53,14 +53,3 @@ class ProfileViewSet(mixins.RetrieveModelMixin,
     queryset = User.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerAccount]
-
-    @action(methods=['get'], detail=False)
-    def search(self, request):
-        q = request.query_params.get('q')
-        queryset = self.get_queryset()
-        if q is not None:
-            queryset = queryset.filter(Q(username__icontains=q) |
-                            Q(name__icontains=q) | Q(email__icontains=q))
-        serializer = ProfileSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
